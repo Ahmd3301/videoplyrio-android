@@ -159,7 +159,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         _isFullscreen.value = !_isFullscreen.value
     }
 
-    fun setVolume(vol: Float) {
+    fun updateVolume(vol: Float) {
         volume = vol.coerceIn(0f, 1f)
         player.volume = if (isMuted) 0f else volume
     }

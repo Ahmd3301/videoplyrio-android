@@ -191,7 +191,7 @@ fun PlyrControlsOverlay(
 
                     Slider(
                         value = viewModel.volume,
-                        onValueChange = { viewModel.setVolume(it) },
+                        onValueChange = { viewModel.updateVolume(it) },
                         modifier = Modifier.width(60.dp).height(24.dp),
                         colors = SliderDefaults.colors(
                             thumbColor = Color.White,
