@@ -13,7 +13,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.webkit.SslError
+import android.net.http.SslError
 import android.webkit.WebSettings
 import java.net.HttpURLConnection
 import java.net.URL

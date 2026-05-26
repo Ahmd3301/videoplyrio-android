@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
@@ -172,7 +171,7 @@ fun OverlayPipPlayer(
 
         Row(modifier = Modifier.align(Alignment.TopEnd).padding(4.dp)) {
             IconButton(onClick = onExpand, modifier = Modifier.size(24.dp)) {
-                Icon(Icons.Default.OpenInFull, null, tint = Color.White, modifier = Modifier.size(12.dp))
+                Icon(painter = painterResource(R.drawable.ic_plyr_enter_fullscreen), contentDescription = null, tint = Color.White, modifier = Modifier.size(12.dp))
             }
             IconButton(onClick = onClose, modifier = Modifier.size(24.dp)) {
                 Icon(Icons.Default.Close, null, tint = Color.White, modifier = Modifier.size(12.dp))

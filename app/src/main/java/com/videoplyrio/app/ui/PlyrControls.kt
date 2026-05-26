@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -47,6 +48,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.videoplyrio.app.OverlayPipService
@@ -65,6 +67,9 @@ fun PlyrControlsOverlay(
     val playlist by viewModel.playlist.collectAsState()
     val currentIndex by viewModel.currentIndex.collectAsState()
     val context = LocalContext.current
+    val density = LocalDensity.current
+    val controlsOffsetYPx = with(density) { PlyrAnimations.ControlsOffsetY.roundToPx() }
+    val playlistOffsetYPx = with(density) { PlyrAnimations.PlaylistOffsetY.roundToPx() }
     var showSettings by remember { mutableStateOf(false) }
 
     Box(
@@ -80,12 +85,12 @@ fun PlyrControlsOverlay(
             enter = fadeIn(animationSpec = PlyrAnimations.ControlsSpec) +
                     slideInVertically(
                         animationSpec = tween(300, easing = FastOutSlowInEasing),
-                        initialOffsetY = { PlyrAnimations.ControlsOffsetY.roundToPx() }
+                        initialOffsetY = { controlsOffsetYPx }
                     ),
             exit = fadeOut(animationSpec = PlyrAnimations.ControlsSpec) +
                    slideOutVertically(
                        animationSpec = tween(300, easing = FastOutSlowInEasing),
-                       targetOffsetY = { PlyrAnimations.ControlsOffsetY.roundToPx() }
+                       targetOffsetY = { controlsOffsetYPx }
                    )
         ) {
             Column(
@@ -102,8 +107,8 @@ fun PlyrControlsOverlay(
                                 animationSpec = PlyrAnimations.PlaylistSpec
                             ) +
                             slideInVertically(
-                                initialOffsetY = { PlyrAnimations.PlaylistOffsetY.roundToPx() },
-                                animationSpec = PlyrAnimations.PlaylistSpec
+                                initialOffsetY = { playlistOffsetYPx },
+                                animationSpec = tween<IntOffset>(500, easing = androidx.compose.animation.core.CubicBezierEasing(0.4f, 0f, 0.2f, 1f))
                             ),
                     exit = fadeOut(animationSpec = PlyrAnimations.PlaylistSpec) +
                            scaleOut(
@@ -111,8 +116,8 @@ fun PlyrControlsOverlay(
                                animationSpec = PlyrAnimations.PlaylistSpec
                            ) +
                            slideOutVertically(
-                               targetOffsetY = { PlyrAnimations.PlaylistOffsetY.roundToPx() },
-                               animationSpec = PlyrAnimations.PlaylistSpec
+                               targetOffsetY = { playlistOffsetYPx },
+                               animationSpec = tween<IntOffset>(500, easing = androidx.compose.animation.core.CubicBezierEasing(0.4f, 0f, 0.2f, 1f))
                            )
                 ) {
                     PlyrPlaylist(viewModel)
