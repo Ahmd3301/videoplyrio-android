@@ -1,9 +1,9 @@
 package com.videoplyrio.app.ui
 
-import android.content.Context
-import android.content.Intent
+import android.app.PictureInPictureParams
+import android.content.pm.PackageManager
 import android.os.Build
-import android.provider.Settings
+import android.util.Rational
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -25,13 +25,11 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
@@ -43,15 +41,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.videoplyrio.app.OverlayPipService
+import com.videoplyrio.app.PlayerActivity
 import com.videoplyrio.app.PlayerViewModel
 import com.videoplyrio.app.R
 import com.videoplyrio.app.ui.theme.PlyrColors
@@ -60,7 +58,8 @@ import java.util.concurrent.TimeUnit
 @Composable
 fun PlyrControlsOverlay(
     viewModel: PlayerViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    activity: PlayerActivity
 ) {
     val controlsVisible = viewModel.controlsVisible
     val playlistOpen = viewModel.playlistOpen
@@ -70,6 +69,7 @@ fun PlyrControlsOverlay(
     val density = LocalDensity.current
     val controlsOffsetYPx = with(density) { PlyrAnimations.ControlsOffsetY.roundToPx() }
     val playlistOffsetYPx = with(density) { PlyrAnimations.PlaylistOffsetY.roundToPx() }
+    val isFullscreen by viewModel.isFullscreen.collectAsState()
     var showSettings by remember { mutableStateOf(false) }
 
     Box(
@@ -123,122 +123,122 @@ fun PlyrControlsOverlay(
                     PlyrPlaylist(viewModel)
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp),
+                        .padding(horizontal = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = { viewModel.seekTo(viewModel.currentPosition - 10000) }) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_plyr_rewind),
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-
-                        val isPlaying = viewModel.player.isPlaying
-                        IconButton(onClick = {
-                            if (isPlaying) viewModel.player.pause() else viewModel.player.play()
-                        }) {
-                            Icon(
-                                painter = painterResource(
-                                    if (isPlaying) R.drawable.ic_plyr_pause else R.drawable.ic_plyr_play
-                                ),
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-
-                        IconButton(onClick = { viewModel.seekTo(viewModel.currentPosition + 30000) }) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_plyr_fast_forward),
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-
-                        Text(
-                            text = "${formatTime(viewModel.currentPosition)}/${formatTime(viewModel.duration)}",
-                            color = Color.White,
-                            fontSize = 13.sp
+                    PlyrButton(onClick = { viewModel.seekTo(viewModel.currentPosition - 10000) }) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_plyr_rewind),
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
                         )
                     }
 
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    val isPlaying = viewModel.player.isPlaying
+                    PlyrButton(onClick = {
+                        if (isPlaying) viewModel.player.pause() else viewModel.player.play()
+                    }) {
+                        Icon(
+                            painter = painterResource(
+                                if (isPlaying) R.drawable.ic_plyr_pause else R.drawable.ic_plyr_play
+                            ),
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+
+                    PlyrButton(onClick = { viewModel.seekTo(viewModel.currentPosition + 30000) }) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_plyr_fast_forward),
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+
+                    PlyrSeekBar(
+                        position = viewModel.currentPosition,
+                        duration = viewModel.duration,
+                        buffered = viewModel.bufferedPosition,
+                        onSeek = { viewModel.seekTo(it) },
+                        modifier = Modifier.weight(1f).padding(horizontal = 8.dp)
+                    )
+
+                    Text(
+                        text = "${formatTime(viewModel.currentPosition)}",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(end = 6.dp)
+                    )
+
+                    PlyrButton(onClick = { viewModel.toggleMute() }) {
+                        Icon(
+                            painter = painterResource(
+                                if (viewModel.isMuted) R.drawable.ic_plyr_muted else R.drawable.ic_plyr_volume
+                            ),
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+
+                    Slider(
+                        value = viewModel.volume,
+                        onValueChange = { viewModel.setVolume(it) },
+                        modifier = Modifier.width(60.dp).height(24.dp),
+                        colors = SliderDefaults.colors(
+                            thumbColor = Color.White,
+                            activeTrackColor = PlyrColors.SeekBarActive,
+                            inactiveTrackColor = Color(0xFF555555)
+                        )
+                    )
+
+                    PlyrButton(onClick = { showSettings = !showSettings }) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_plyr_settings),
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+                        context.packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
                     ) {
-                        IconButton(onClick = { }) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_plyr_volume),
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-
-                        IconButton(onClick = { showSettings = !showSettings }) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_plyr_settings),
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-
-                        IconButton(onClick = {
-                            if (Settings.canDrawOverlays(context)) {
-                                val intent = Intent(context, OverlayPipService::class.java)
-                                intent.putExtra("stream_url", playlist.getOrNull(currentIndex)?.src ?: "")
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                    context.startForegroundService(intent)
-                                } else {
-                                    context.startService(intent)
-                                }
-                            } else {
-                                val intent = Intent(
-                                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                                    android.net.Uri.parse("package:${context.packageName}")
-                                )
-                                context.startActivity(intent)
-                            }
+                        PlyrButton(onClick = {
+                            val params = PictureInPictureParams.Builder()
+                                .setAspectRatio(Rational(16, 9))
+                                .build()
+                            activity.enterPictureInPictureMode(params)
                         }) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_plyr_pip),
                                 contentDescription = null,
                                 tint = Color.White,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-
-                        IconButton(onClick = { }) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_plyr_enter_fullscreen),
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(16.dp)
                             )
                         }
                     }
-                }
 
-                PlyrSeekBar(
-                    position = viewModel.currentPosition,
-                    duration = viewModel.duration,
-                    buffered = viewModel.bufferedPosition,
-                    onSeek = { viewModel.seekTo(it) }
-                )
+                    PlyrButton(onClick = { viewModel.toggleFullscreen() }) {
+                        Icon(
+                            painter = painterResource(
+                                if (isFullscreen) R.drawable.ic_plyr_exit_fullscreen
+                                else R.drawable.ic_plyr_enter_fullscreen
+                            ),
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
             }
         }
 
@@ -260,50 +260,65 @@ fun PlyrControlsOverlay(
 }
 
 @Composable
+fun PlyrButton(onClick: () -> Unit, content: @Composable () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .clip(RoundedCornerShape(4.dp))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        content()
+    }
+}
+
+@Composable
 fun PlyrSeekBar(
     position: Long,
     duration: Long,
     buffered: Long,
-    onSeek: (Long) -> Unit
+    onSeek: (Long) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val progress = if (duration > 0) position.toFloat() / duration else 0f
     val bufferedProgress = if (duration > 0) buffered.toFloat() / duration else 0f
-    val density = LocalDensity.current
 
-    Box(modifier = Modifier.fillMaxWidth().height(4.dp).padding(horizontal = 20.dp)) {
-        Box(modifier = Modifier.fillMaxSize().background(
-            PlyrColors.SeekBarTrack,
-            RoundedCornerShape(2.dp)
-        ))
-        Box(modifier = Modifier
-            .fillMaxHeight()
-            .fillMaxWidth(bufferedProgress)
-            .background(PlyrColors.SeekBarBuffer, RoundedCornerShape(2.dp))
-        )
-        Box(modifier = Modifier
-            .fillMaxHeight()
-            .fillMaxWidth(progress)
-            .background(PlyrColors.SeekBarActive, RoundedCornerShape(2.dp))
-        )
-        val thumbOffset = with(density) { (progress * 200f - 6.5f).dp }
-        Box(
-            modifier = Modifier
-                .size(13.dp)
-                .align(Alignment.CenterStart)
-                .offset(x = thumbOffset)
-                .background(Color.White, CircleShape)
+    Box(modifier = modifier.height(24.dp)) {
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(modifier = Modifier.weight(1f).height(4.dp)) {
+                Box(modifier = Modifier.fillMaxSize().background(
+                    Color(0xFF555555),
+                    RoundedCornerShape(2.dp)
+                ))
+                Box(modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(bufferedProgress)
+                    .background(PlyrColors.SeekBarBuffer, RoundedCornerShape(2.dp))
+                )
+                Box(modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(progress)
+                    .background(PlyrColors.SeekBarActive, RoundedCornerShape(2.dp))
+                )
+            }
+        }
+        Slider(
+            value = progress,
+            onValueChange = { onSeek((it * duration).toLong()) },
+            colors = SliderDefaults.colors(
+                thumbColor = Color.Transparent,
+                activeTrackColor = Color.Transparent,
+                inactiveTrackColor = Color.Transparent
+            ),
+            modifier = Modifier.fillMaxSize()
         )
     }
-    Slider(
-        value = progress,
-        onValueChange = { onSeek((it * duration).toLong()) },
-        colors = SliderDefaults.colors(
-            thumbColor = Color.Transparent,
-            activeTrackColor = Color.Transparent,
-            inactiveTrackColor = Color.Transparent
-        ),
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)
-    )
 }
 
 private fun formatTime(millis: Long): String {

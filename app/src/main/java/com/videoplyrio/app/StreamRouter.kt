@@ -21,15 +21,16 @@ object StreamRouter {
         val lower = cleanUrl.split("?")[0].lowercase()
 
         return when {
-            isDirectStream(lower, url) -> RouteResult.DirectPlay(url, detectStreamType(lower))
+            url.contains("##ext") -> RouteResult.NeedsExtraction(url, ExtractionMethod.WEBVIEW)
+            isDirectStream(lower, url) -> RouteResult.DirectPlay(stripSuffix(url), detectStreamType(lower))
+            url.contains("##ex") -> RouteResult.NeedsExtraction(url, ExtractionMethod.NATIVE_PACKER)
             isFaselTarget(url) -> RouteResult.NeedsExtraction(url, ExtractionMethod.WEBVIEW)
             else -> RouteResult.NeedsExtraction(url, ExtractionMethod.WEBVIEW)
         }
     }
 
     private fun isDirectStream(lower: String, original: String): Boolean {
-        return DIRECT_EXTENSIONS.any { lower.endsWith(it) || lower.contains("$it/") } ||
-               original.contains("##ex")
+        return DIRECT_EXTENSIONS.any { lower.endsWith(it) || lower.contains("$it/") }
     }
 
     private fun detectStreamType(lower: String): StreamType = when {
@@ -40,11 +41,15 @@ object StreamRouter {
     }
 
     private fun isFaselTarget(url: String): Boolean {
-        if (url.contains("##ex")) return false
+        if (url.contains("##ex") || url.contains("##ext")) return false
         val clean = url.split(DRM_SEPARATOR)[0].split("?")[0].lowercase()
         return clean.contains("fasel") &&
                !clean.contains(".m3u8") &&
                !clean.contains(".mpd") &&
                !clean.contains(".mp4")
+    }
+
+    fun stripSuffix(url: String): String {
+        return url.replace(Regex("##[a-z]+$"), "").trim()
     }
 }

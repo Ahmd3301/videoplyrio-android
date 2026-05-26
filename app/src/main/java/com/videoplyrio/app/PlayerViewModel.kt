@@ -30,7 +30,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     var controlsVisible by mutableStateOf(true)
         private set
 
-    var playlistOpen by mutableStateOf(false)
+    var playlistOpen by mutableStateOf(true)
         private set
 
     var isLoading by mutableStateOf(false)
@@ -51,6 +51,15 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     var bufferedPosition by mutableStateOf(0L)
         private set
 
+    var volume by mutableStateOf(0.5f)
+        private set
+
+    var isMuted by mutableStateOf(false)
+        private set
+
+    private val _isFullscreen = MutableStateFlow(false)
+    val isFullscreen: StateFlow<Boolean> = _isFullscreen.asStateFlow()
+
     val player: ExoPlayer = ExoPlayer.Builder(application).build()
 
     private val hideControlsRunnable = Runnable { controlsVisible = false }
@@ -64,19 +73,22 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         onError = { msg -> errorMessage = msg; isLoading = false }
     )
 
-    fun loadFromIntent(url: String, title: String, playlistJson: String? = null) {
-        currentTitle = title
-        if (!playlistJson.isNullOrEmpty()) {
-            try {
-                val json = String(android.util.Base64.decode(playlistJson, android.util.Base64.DEFAULT))
-                val items = com.google.gson.Gson().fromJson(json, Array<PlaylistEntry>::class.java)
-                _playlist.value = items.toList()
-            } catch (e: Exception) {
-                _playlist.value = listOf(PlaylistEntry(title, url))
-            }
-        } else {
-            _playlist.value = listOf(PlaylistEntry(title, url))
+    fun loadFromBase64(base64Data: String) {
+        try {
+            val json = String(android.util.Base64.decode(base64Data, android.util.Base64.DEFAULT))
+            val items = com.google.gson.Gson().fromJson(json, Array<PlaylistEntry>::class.java)
+            _playlist.value = items.toList()
+            val first = items.firstOrNull() ?: return
+            currentTitle = first.title
+            loadStream(first.src)
+        } catch (e: Exception) {
+            errorMessage = "فشل تحليل الرابط"
         }
+    }
+
+    fun loadFromIntent(url: String, title: String) {
+        currentTitle = title
+        _playlist.value = listOf(PlaylistEntry(title, url))
         loadStream(url)
     }
 
@@ -86,16 +98,17 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
 
         val route = StreamRouter.route(url)
         when (route) {
-            is StreamRouter.RouteResult.DirectPlay -> playDirectUrl(url)
+            is StreamRouter.RouteResult.DirectPlay -> playDirectUrl(StreamRouter.stripSuffix(url))
             is StreamRouter.RouteResult.NeedsExtraction -> {
                 if (route.method == StreamRouter.ExtractionMethod.NATIVE_PACKER) {
                     viewModelScope.launch(Dispatchers.IO) {
-                        val result = NativeUnpacker.tryExtractFromUrl(url, DESKTOP_UA)
+                        val cleanUrl = StreamRouter.stripSuffix(url)
+                        val result = NativeUnpacker.tryExtractFromUrl(cleanUrl, DESKTOP_UA)
                         if (result != null) playDirectUrl(result)
-                        else extractorEngine.extract(url)
+                        else extractorEngine.extract(cleanUrl)
                     }
                 } else {
-                    extractorEngine.extract(url)
+                    extractorEngine.extract(StreamRouter.stripSuffix(url))
                 }
             }
         }
@@ -141,6 +154,20 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun togglePlaylist() { playlistOpen = !playlistOpen }
+
+    fun toggleFullscreen() {
+        _isFullscreen.value = !_isFullscreen.value
+    }
+
+    fun setVolume(vol: Float) {
+        volume = vol.coerceIn(0f, 1f)
+        player.volume = if (isMuted) 0f else volume
+    }
+
+    fun toggleMute() {
+        isMuted = !isMuted
+        player.volume = if (isMuted) 0f else volume
+    }
 
     fun attachTextureView(textureView: TextureView) {
         player.setVideoTextureView(textureView)
