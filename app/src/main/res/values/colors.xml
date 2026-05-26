@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="plyr_color_main">#66FFFFFF</color>
+    <color name="plyr_controls_bg">#00000000</color>
+    <color name="plyr_glass_bg">#1FFFFFFF</color>
+    <color name="plyr_glass_active">#40FFFFFF</color>
+    <color name="plyr_glass_hover">#33FFFFFF</color>
+    <color name="plyr_menu_bg">#1FFFFFFF</color>
+    <color name="plyr_text_primary">#FFFFFF</color>
+    <color name="plyr_text_secondary">#CCFFFFFF</color>
+    <color name="plyr_seekbar_active">#FFFFFF</color>
+    <color name="plyr_seekbar_buffer">#40FFFFFF</color>
+    <color name="plyr_seekbar_track">#33FFFFFF</color>
+    <color name="plyr_error_bg">#E0000000</color>
+    <color name="plyr_loading_bg">#D1000000</color>
+</resources>

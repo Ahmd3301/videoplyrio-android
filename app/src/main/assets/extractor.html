@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+</head>
+<body>
+<script>
+(function() {
+    if (window.__plyr_injected__) return;
+    window.__plyr_injected__ = true;
+
+    var origOpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function(method, url) {
+        if (url && typeof url === 'string' && url.indexOf('.m3u8') !== -1
+            && url.indexOf('seg') === -1 && url.indexOf('chunk') === -1) {
+            window.ExtractorBridge.onStreamFound(url);
+        }
+        return origOpen.apply(this, arguments);
+    };
+
+    var origFetch = window.fetch;
+    window.fetch = function(resource, init) {
+        var url = typeof resource === 'string' ? resource : resource.url;
+        if (url && url.indexOf('.m3u8') !== -1
+            && url.indexOf('seg') === -1 && url.indexOf('chunk') === -1) {
+            window.ExtractorBridge.onStreamFound(url);
+        }
+        return origFetch.apply(this, arguments);
+    };
+
+    var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(m) {
+            m.addedNodes.forEach(function(node) {
+                if (node.tagName === 'VIDEO' && node.src && node.src.indexOf('.m3u8') !== -1) {
+                    window.ExtractorBridge.onStreamFound(node.src);
+                }
+                if (node.tagName === 'SOURCE' && node.src && node.src.indexOf('.m3u8') !== -1) {
+                    window.ExtractorBridge.onStreamFound(node.src);
+                }
+            });
+        });
+    });
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+
+    var vid = document.querySelector('video[src*=".m3u8"]');
+    if (vid) { window.ExtractorBridge.onStreamFound(vid.src); return; }
+    var src = document.querySelector('source[src*=".m3u8"]');
+    if (src) { window.ExtractorBridge.onStreamFound(src.src); return; }
+
+    var scripts = document.querySelectorAll('script:not([src])');
+    for (var i = 0; i < scripts.length; i++) {
+        var match = scripts[i].textContent.match(/["'](https?:\/\/[^"']+\.m3u8[^"']*?)["']/);
+        if (match) { window.ExtractorBridge.onStreamFound(match[1]); return; }
+    }
+
+    var btns = document.querySelectorAll('button[data-url*=".m3u8"], button.hd_btn');
+    for (var j = 0; j < btns.length; j++) {
+        var u = btns[j].getAttribute('data-url') || btns[j].getAttribute('data-src');
+        if (u && u.indexOf('.m3u8') !== -1) { window.ExtractorBridge.onStreamFound(u); return; }
+    }
+})();
+</script>
+</body>
+</html>

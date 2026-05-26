@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">فيديو بلاير</string>
+    <string name="loading">جاري تحميل البث…</string>
+    <string name="extracting">جاري استخراج الرابط…</string>
+    <string name="error_load">فشل تحميل البث</string>
+    <string name="retry">إعادة المحاولة</string>
+    <string name="settings_speed">السرعة</string>
+    <string name="settings_quality">الجودة</string>
+    <string name="speed_normal">عادي</string>
+    <string name="pip_permission">مطلوب إذن العرض فوق التطبيقات لوضع النافذة العائمة</string>
+    <string name="auto_quality">تلقائي</string>
+</resources>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Video Plyr</string>
+    <string name="loading">Loading stream…</string>
+    <string name="extracting">Extracting link…</string>
+    <string name="error_load">Failed to load stream</string>
+    <string name="retry">Retry</string>
+    <string name="settings_speed">Speed</string>
+    <string name="settings_quality">Quality</string>
+    <string name="speed_normal">Normal</string>
+    <string name="pip_permission">Overlay permission required for picture-in-picture</string>
+    <string name="auto_quality">Auto</string>
+</resources>

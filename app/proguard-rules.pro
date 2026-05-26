@@ -1,0 +1,2 @@
+-keep class com.videoplyrio.app.** { *; }
+-dontwarn com.videoplyrio.app.**
